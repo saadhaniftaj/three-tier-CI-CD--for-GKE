@@ -17,7 +17,8 @@ jobs:
 
       - name: Authenticate to GCR
         run: |
-          echo "${{ secrets.GCR_JSON_KEY }}" | docker login -u _json_key --password-stdin https://gcr.io
+          echo "${{ secrets.GCR_JSON_KEY }}" > gcr_key.json
+          cat gcr_key.json | docker login -u _json_key --password-stdin https://gcr.io
         env:
           GCR_JSON_KEY: ${{ secrets.GCR_JSON_KEY }}
 
@@ -38,8 +39,11 @@ jobs:
 
       - name: Deploy to GKE
         run: |
-          gcloud auth activate-service-account --key-file=${{ secrets.GKE_SA_KEY }}
+          echo "${{ secrets.GKE_SA_KEY }}" > gke_key.json
+          gcloud auth activate-service-account --key-file=gke_key.json
           gcloud container clusters get-credentials my-cluster --zone us-central1-a --project devops-terra-464510
           helm upgrade --install frontend ./helm-charts/frontend --set image.tag=${{ github.ref_name }}
           helm upgrade --install backend ./helm-charts/backend --set image.tag=${{ github.ref_name }}
           helm upgrade --install mysql ./helm-charts/database --set image.tag=${{ github.ref_name }}
+        env:
+          GKE_SA_KEY: ${{ secrets.GKE_SA_KEY }}
