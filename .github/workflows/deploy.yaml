@@ -1,0 +1,45 @@
+name: Deploy on Tag
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Authenticate to GCR
+        run: |
+          echo "${{ secrets.GCR_JSON_KEY }}" | docker login -u _json_key --password-stdin https://gcr.io
+        env:
+          GCR_JSON_KEY: ${{ secrets.GCR_JSON_KEY }}
+
+      - name: Build and Push Frontend
+        run: |
+          docker build -t gcr.io/devops-terra-464510/frontend:${{ github.ref_name }} ./frontend
+          docker push gcr.io/devops-terra-464510/frontend:${{ github.ref_name }}
+
+      - name: Build and Push Backend
+        run: |
+          docker build -t gcr.io/devops-terra-464510/backend:${{ github.ref_name }} ./backend
+          docker push gcr.io/devops-terra-464510/backend:${{ github.ref_name }}
+
+      - name: Build and Push Database
+        run: |
+          docker build -t gcr.io/devops-terra-464510/mysql:${{ github.ref_name }} ./database
+          docker push gcr.io/devops-terra-464510/mysql:${{ github.ref_name }}
+
+      - name: Deploy to GKE
+        run: |
+          gcloud auth activate-service-account --key-file=${{ secrets.GKE_SA_KEY }}
+          gcloud container clusters get-credentials my-cluster --zone us-central1-a --project devops-terra-464510
+          helm upgrade --install frontend ./helm-charts/frontend --set image.tag=${{ github.ref_name }}
+          helm upgrade --install backend ./helm-charts/backend --set image.tag=${{ github.ref_name }}
+          helm upgrade --install mysql ./helm-charts/database --set image.tag=${{ github.ref_name }}

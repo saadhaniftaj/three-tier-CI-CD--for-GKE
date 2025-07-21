@@ -1,0 +1,11 @@
+replicaCount: 1
+image:
+  repository: gcr.io/devops-terra-464510/mysql
+  tag: latest
+service:
+  type: ClusterIP
+  port: 3306
+persistence:
+  enabled: true
+  storageClass: standard
+  size: 10Gi
