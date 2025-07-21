@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Release.Name }}-mysql
+  name: mysql
 spec:
   serviceName: mysql-service
   replicas: {{ .Values.replicaCount }}
@@ -12,10 +12,10 @@ spec:
     metadata:
       labels:
         app: mysql
-    spec: 
+    spec:
       containers:
       - name: mysql
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
         ports:
         - containerPort: 3306
         env:
